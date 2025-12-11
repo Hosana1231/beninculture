@@ -12,14 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('regions', function (Blueprint $table) {
-            $table->id();
-            $table->string('nom_region', 100)->unique();
-            $table->string('slug_region', 100)->unique();
-            $table->text('description')->nullable();
-            $table->string('image_couverture', 500)->nullable();
-            $table->integer('nombre_contenus')->default(0);
-            $table->index('slug_region');
-        });
+    $table->id();
+    $table->string('nom')->unique();
+    $table->timestamps();
+});
+
     }
 
     /**
