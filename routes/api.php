@@ -17,9 +17,11 @@ use App\Http\Controllers\Api\CommentaireController;
 // ==================
 // AUTH (toujours en haut)
 // ==================
-Route::post('/auth/register', [AuthController::class, 'register']);
-Route::post('/auth/login', [AuthController::class, 'login']);
+//Route::post('/auth/register', [AuthController::class, 'register']);
+//Route::post('/auth/login', [AuthController::class, 'login']);
 
+Route::post('/login', [AuthController::class, 'login']);       // Alias
+Route::post('/register', [AuthController::class, 'register']); // Alias
 // ==================
 // ACCUEIL
 // ==================
