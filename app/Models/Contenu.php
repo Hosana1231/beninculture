@@ -57,4 +57,13 @@ class Contenu extends Model
     {
         return $this->hasMany(Telechargement::class);
     }
+    protected static function boot()
+{
+    parent::boot();
+
+    static::creating(function ($contenu) {
+        $contenu->slug = Str::slug($contenu->titre);
+    });
+}
+
 }
