@@ -1,13 +1,11 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Media extends Model
 {
-    use HasFactory;
+    protected $table = 'media';
 
     protected $fillable = [
         'contenu_id',
@@ -17,8 +15,9 @@ class Media extends Model
         'taille'
     ];
 
+    // Relation avec le contenu
     public function contenu()
     {
-        return $this->belongsTo(Contenu::class);
+        return $this->belongsTo(Contenu::class, 'contenu_id');
     }
 }

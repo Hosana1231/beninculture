@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('medias', function (Blueprint $table) {
+        Schema::create('media', function (Blueprint $table) {
     $table->id();
     $table->unsignedBigInteger('contenu_id');
     $table->enum('type_media', ['image','audio','video']);
