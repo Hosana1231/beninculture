@@ -3,6 +3,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Contenu extends Model
 {
@@ -28,14 +29,14 @@ class Contenu extends Model
         return $this->hasMany(Media::class, 'contenu_id');
     }
 
-    // Relation avec la catégorie
-    public function categorie()
+    // Relation avec la catégorie (utilise "category" car c'est le nom du modèle)
+    public function category(): BelongsTo
     {
-        return $this->belongsTo(Categorie::class, 'categorie_id');
+        return $this->belongsTo(Category::class, 'categorie_id');
     }
 
     // Relation avec l'utilisateur
-    public function utilisateur()
+    public function utilisateur(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }

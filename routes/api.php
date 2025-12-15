@@ -35,6 +35,8 @@ Route::get('/contenus/popular', [ContenuController::class, 'popular']);
 // ==================
 Route::get('/contenus', [ContenuController::class, 'index']);
 Route::get('/contenus/categorie/{slug}', [ContenuController::class, 'byCategory']);
+Route::post('/contenus', [ContenuController::class, 'store']);
+Route::post('/upload', [ContenuController::class, 'upload']);
 
 // ==================
 // CONTENU PAR ID (toujours à la fin)

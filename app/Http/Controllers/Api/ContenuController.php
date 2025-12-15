@@ -1,111 +1,134 @@
 <?php
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Models\Contenu;
 use App\Models\Media;
+use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class ContenuController extends Controller
 {
-    // GET /api/contenus → Tous les contenus avec leurs médias
+    // GET /api/contenus → Affiche les contenus avec leurs médias
     public function index()
-    {
-        // Charge les contenus avec leurs médias et catégorie
-        $contenus = Contenu::with(['media', 'categorie', 'utilisateur'])
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($contenu) {
-                // Formate la réponse
-                return [
-                    'id' => $contenu->id,
-                    'titre' => $contenu->titre,
-                    'description' => $contenu->description,
-                    'type_contenu' => $contenu->type_contenu,
-                    'categorie' => $contenu->categorie ? $contenu->categorie->nom : null,
-                    'categorie_id' => $contenu->categorie_id,
-                    'vues' => $contenu->vues,
-                    'likes' => $contenu->likes,
-                    'est_featured' => $contenu->est_featured,
-                    'couleur_debut' => $contenu->couleur_debut,
-                    'couleur_fin' => $contenu->couleur_fin,
-                    'artiste' => $contenu->utilisateur ? $contenu->utilisateur->name : 'Anonyme',
-                    // Trouve l'image de couverture (premier média de type image)
-                    'image_url' => $contenu->media->firstWhere('type_media', 'image')?->url
-                                   ?: 'https://images.unsplash.com/photo-1511379938547-c1f69b13d835?w=400&h=400&fit=crop',
-                    // Trouve la vidéo/audio (premier média de type video ou audio)
-                    'media_url' => $contenu->media->firstWhere('type_media', 'video')?->url
-                                   ?: $contenu->media->firstWhere('type_media', 'audio')?->url
-                                   ?: null,
-                    'created_at' => $contenu->created_at,
-                    'updated_at' => $contenu->updated_at,
-                ];
+{
+    $contenus = Contenu::with(['media', 'category', 'utilisateur'])
+        ->orderBy('created_at', 'desc')
+        ->get()
+        ->map(function ($contenu) {
+
+            // Cherche l'image dans la table MEDIA
+            $imageMedia = $contenu->media->first(function ($media) {
+                return $media->type_media === 'image';
             });
 
-        return response()->json([
-            'success' => true,
-            'data' => $contenus
-        ]);
-    }
+            // Cherche la vidéo/audio dans la table MEDIA
+            $mediaFile = $contenu->media->first(function ($media) {
+                return $media->type_media !== 'image'; // video ou audio
+            });
 
-    // GET /api/contenus/featured → Contenus en vedette
-    public function featured()
-    {
-        $contenus = Contenu::with(['media', 'categorie'])
-            ->where('est_featured', true)
-            ->orderBy('created_at', 'desc')
-            ->take(10)
-            ->get();
+            return [
+                'id' => $contenu->id,
+                'titre' => $contenu->titre,
+                'description' => $contenu->description,
+                'type_contenu' => $contenu->type_contenu,
+                'categorie' => $contenu->category->nom ?? 'Général',
+                'categorie_id' => $contenu->categorie_id,
+                'vues' => $contenu->vues,
+                'likes' => $contenu->likes,
+                'est_featured' => (bool)$contenu->est_featured,
+                'couleur_debut' => $contenu->couleur_debut,
+                'couleur_fin' => $contenu->couleur_fin,
+                'artiste' => $contenu->utilisateur->name ?? 'Anonyme',
 
-        return response()->json([
-            'success' => true,
-            'data' => $contenus
-        ]);
-    }
+                // SEULEMENT si tu as vraiment des médias dans ta table `media`
+                'image_url' => $imageMedia ? url($imageMedia->url) : null,
+                'media_url' => $mediaFile ? url($mediaFile->url) : null,
+                'media_type' => $mediaFile ? $mediaFile->type_media : null,
 
-    // GET /api/contenus/{id} → Un contenu spécifique
-    public function show($id)
-    {
-        $contenu = Contenu::with(['media', 'categorie', 'utilisateur'])->find($id);
+                'created_at' => $contenu->created_at,
+            ];
+        });
 
-        if (!$contenu) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Contenu non trouvé'
-            ], 404);
-        }
+    return response()->json([
+        'success' => true,
+        'data' => $contenus
+    ]);
+}
 
-        return response()->json([
-            'success' => true,
-            'data' => $contenu
-        ]);
-    }
-
-    // POST /api/contenus → Ajouter un contenu
+    // POST /api/contenus → Crée un contenu AVEC UPLOAD DE FICHIERS
     public function store(Request $request)
     {
-        $request->validate([
+        // Validation
+        $validator = Validator::make($request->all(), [
             'titre' => 'required|string|max:255',
+            'description' => 'nullable|string',
             'categorie_id' => 'required|exists:categories,id',
             'type_contenu' => 'required|in:musique,video,art,tradition,lieu,histoire',
-            'description' => 'nullable|string',
+            'image_file' => 'required|file|image|max:5120', // 5MB max, doit être une image
+            'media_file' => 'required|file|mimes:mp4,avi,mov,mp3,wav|max:20480', // 20MB max
         ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
         // Crée le contenu
         $contenu = Contenu::create([
             'titre' => $request->titre,
-            'slug' => \Str::slug($request->titre),
+            'slug' => Str::slug($request->titre),
             'categorie_id' => $request->categorie_id,
-            'user_id' => $request->user_id ?? 1, // À adapter avec l'auth
+            'user_id' => auth()->id() ?? 1,
             'type_contenu' => $request->type_contenu,
             'description' => $request->description,
             'couleur_debut' => $request->couleur_debut ?? '#FF9800',
             'couleur_fin' => $request->couleur_fin ?? '#FF5722',
         ]);
 
+        // Upload l'image
+        if ($request->hasFile('image_file')) {
+            Media::uploadFile($request->file('image_file'), $contenu->id, 'image');
+        }
+
+        // Upload le média (vidéo/audio)
+        if ($request->hasFile('media_file')) {
+            $type = $request->type_contenu === 'musique' ? 'audio' : 'video';
+            Media::uploadFile($request->file('media_file'), $contenu->id, $type);
+        }
+
         return response()->json([
             'success' => true,
-            'message' => 'Contenu créé avec succès',
-            'data' => $contenu
+            'message' => 'Contenu et fichiers uploadés avec succès!',
+            'data' => $contenu->load('media')
         ], 201);
+    }
+
+    // POST /api/upload → Juste pour uploader un fichier
+    public function upload(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|max:20480',
+            'type' => 'required|in:image,video,audio'
+        ]);
+
+        $file = $request->file('file');
+        $type = $request->type;
+
+        // Upload le fichier
+        $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+        $folder = $type . 's';
+        $path = $file->storeAs($folder, $fileName, 'public');
+
+        return response()->json([
+            'success' => true,
+            'url' => url('storage/' . $path),
+            'path' => $path,
+            'filename' => $fileName
+        ]);
     }
 }
