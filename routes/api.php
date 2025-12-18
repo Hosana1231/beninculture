@@ -17,11 +17,9 @@ use App\Http\Controllers\Api\CommentaireController;
 // ==================
 // AUTH (toujours en haut)
 // ==================
-//Route::post('/auth/register', [AuthController::class, 'register']);
-//Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);
 
-Route::post('/login', [AuthController::class, 'login']);       // Alias
-Route::post('/register', [AuthController::class, 'register']); // Alias
 // ==================
 // ACCUEIL
 // ==================
@@ -56,8 +54,9 @@ Route::get('/profile/{userId}/playlists', [ProfileController::class, 'playlists'
 // PLAYLIST
 // ==================
 Route::post('/playlists', [PlaylistController::class, 'store']);
-Route::post('/playlists/{playlistId}/items', [PlaylistController::class, 'addItem']);
+Route::post('/playlists/{playlistId}/addItem', [PlaylistController::class, 'addItem']);
 Route::delete('/playlists/{playlistId}/items/{itemId}', [PlaylistController::class, 'removeItem']);
+Route::get('/playlists/{playlistId}/items', [PlaylistController::class, 'items']);
 
 // ==================
 // FAVORIS

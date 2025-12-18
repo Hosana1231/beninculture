@@ -131,4 +131,53 @@ class ContenuController extends Controller
             'filename' => $fileName
         ]);
     }
+
+    // Dans ContenuController.php - ajoutez cette méthode
+public function show($id)
+{
+    // Chercher le contenu avec ses relations
+    $contenu = Contenu::with(['media', 'category', 'utilisateur'])
+        ->find($id);
+
+    if (!$contenu) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Contenu non trouvé'
+        ], 404);
+    }
+
+    // Chercher l'image dans les médias
+    $imageMedia = $contenu->media->first(function ($media) {
+        return $media->type_media === 'image';
+    });
+
+    // Chercher le fichier média (vidéo/audio)
+    $mediaFile = $contenu->media->first(function ($media) {
+        return $media->type_media !== 'image';
+    });
+
+    $response = [
+        'success' => true,
+        'data' => [
+            'id' => $contenu->id,
+            'titre' => $contenu->titre,
+            'description' => $contenu->description,
+            'type_contenu' => $contenu->type_contenu,
+            'categorie' => $contenu->category->nom ?? 'Général',
+            'categorie_id' => $contenu->categorie_id,
+            'vues' => $contenu->vues,
+            'likes' => $contenu->likes,
+            'est_featured' => (bool)$contenu->est_featured,
+            'couleur_debut' => $contenu->couleur_debut,
+            'couleur_fin' => $contenu->couleur_fin,
+            'artiste' => $contenu->utilisateur->name ?? 'Anonyme',
+            'image_url' => $imageMedia ? url($imageMedia->url) : null,
+            'media_url' => $mediaFile ? url($mediaFile->url) : null,
+            'media_type' => $mediaFile ? $mediaFile->type_media : null,
+            'created_at' => $contenu->created_at,
+        ]
+    ];
+
+    return response()->json($response);
+}
 }
